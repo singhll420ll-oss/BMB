@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Time Report - Bite Me Buddy Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .report-card {
+            transition: transform 0.3s;
+        }
+        
+        .report-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .session-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .duration-badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .active-badge {
+            background: #17a2b8;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .role-badge {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        
+        .role-customer { background: #cce5ff; color: #004085; }
+        .role-team_member { background: #d4edda; color: #155724; }
+        .role-admin { background: #f8d7da; color: #721c24; }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">
+                <i class="fas fa-user-shield"></i> Bite Me Buddy Admin
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/online-time">
+                            <i class="fas fa-clock"></i> Online Time
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/customers">
+                            <i class="fas fa-user-friends"></i> Customers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth/logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Period Selection -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt"></i> Report Period
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group" role="group">
+                            <a href="/admin/online-time?days=7" class="btn btn-outline-primary">
+                                Last 7 Days
+                            </a>
+                            <a href="/admin/online-time?days=30" class="btn btn-outline-primary active">
+                                Last 30 Days
+                            </a>
+                            <a href="/admin/online-time?days=90" class="btn btn-outline-primary">
+                                Last 90 Days
+                            </a>
+                            <a href="/admin/online-time?days=365" class="btn btn-outline-primary">
+                                Last Year
+                            </a>
+                        </div>
+                        <p class="mt-2 mb-0 text-muted">
+                            Showing data for last {{ session_stats.period_days }} days
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2">Total Sessions</h6>
+                        <h3 class="card-title">
+                            {{ session_stats.stats|sum(attribute='session_count') }}
+                        </h3>
+                        <small>Across all users</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2">Active Users</h6>
+                        <h3 class="card-title">{{ active_sessions|length }}</h3>
+                        <small>Currently online</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2">Today's Sessions</h6>
+                        <h3 class="card-title">{{ today_sessions|length }}</h3>
+                        <small>Logged in today</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2">Avg Session Time</h6>
+                        <h3 class="card-title">
+                            {% set total_avg = session_stats.stats|sum(attribute='avg_duration') %}
+                            {% set count = session_stats.stats|length %}
+                            {% if count > 0 %}
+                            {{ (total_avg / count / 60)|round(1) }} min
+                            {% else %}
+                            0 min
+                            {% endif %}
+                        </h3>
+                        <small>Average per user</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Statistics -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar"></i> User Session Statistics
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if session_stats.stats %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Sessions</th>
+                                        <th>Avg Duration</th>
+                                        <th>Last Login</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in session_stats.stats %}
+                                    <tr class="report-card">
+                                        <td>
+                                            <strong>{{ stat.user_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">ID: {{ stat.user_id }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="role-badge role-{{ stat.role }}">
+                                                {{ stat.role.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ stat.session_count }}</td>
+                                        <td>
+                                            {% if stat.avg_duration %}
+                                            <span class="duration-badge">
+                                                {{ (stat.avg_duration / 60)|round(1) }} min
+                                            </span>
+                                            {% else %}
+                                            <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ stat.last_login.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>
+                                            {% set is_active = false %}
+                                            {% for session in active_sessions %}
+                                                {% if session.user_id == stat.user_id %}
+                                                    {% set is_active = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if is_active %}
+                                            <span class="active-badge">Online</span>
+                                            {% else %}
+                                            <span class="text-muted">Offline</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No session data available for the selected period.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-clock"></i> Currently Active Sessions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="session-list">
+                            {% if active_sessions %}
+                                {% for session in active_sessions %}
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ session.user.name }}</h6>
+                                            <span class="role-badge role-{{ session.user.role }}">
+                                                {{ session.user.role.replace('_', ' ').title() }}
+                                            </span>
+                                        </div>
+                                        <span class="active-badge">Online</span>
+                                    </div>
+                                    <p class="mb-1 small">
+                                        <strong>Login Time:</strong> 
+                                        {{ session.login_time.strftime('%H:%M:%S') }}
+                                    </p>
+                                    <p class="mb-0 small">
+                                        <strong>Duration:</strong> 
+                                        {% set duration = (now() - session.login_time).total_seconds() %}
+                                        {{ (duration // 3600)|int }}h {{ ((duration % 3600) // 60)|int }}m
+                                    </p>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> No active sessions at the moment.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-4 py-3">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Bite Me Buddy Admin</h5>
+                    <p>Online Time Analytics</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2024 Bite Me Buddy. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

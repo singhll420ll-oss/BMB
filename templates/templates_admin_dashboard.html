@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Bite Me Buddy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .dashboard-card {
+            transition: transform 0.3s;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+        
+        .card-revenue {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .card-orders {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+        
+        .card-users {
+            background: linear-gradient(135deg, #6f42c1 0%, #6610f2 100%);
+            color: white;
+        }
+        
+        .card-pending {
+            background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%);
+            color: white;
+        }
+        
+        .recent-order {
+            border-left: 4px solid #007bff;
+        }
+        
+        .active-session {
+            border-left: 4px solid #28a745;
+        }
+        
+        .nav-link {
+            border-radius: 5px;
+            margin: 2px 0;
+        }
+        
+        .nav-link:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-link.active {
+            background: #007bff;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/dashboard">
+                <i class="fas fa-user-shield"></i> Bite Me Buddy Admin
+            </a>
+            <div class="navbar-text text-white">
+                Welcome, {{ user.name }}
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/dashboard">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/services">
+                            <i class="fas fa-concierge-bell"></i> Services
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/orders">
+                            <i class="fas fa-shopping-cart"></i> Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/auth/logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">Admin Panel</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <a href="/admin/dashboard" class="list-group-item list-group-item-action active">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="/admin/services" class="list-group-item list-group-item-action">
+                                <i class="fas fa-concierge-bell"></i> Manage Services
+                            </a>
+                            <a href="/admin/team-members" class="list-group-item list-group-item-action">
+                                <i class="fas fa-users"></i> Team Members
+                            </a>
+                            <a href="/admin/orders" class="list-group-item list-group-item-action">
+                                <i class="fas fa-shopping-cart"></i> Manage Orders
+                            </a>
+                            <a href="/admin/customers" class="list-group-item list-group-item-action">
+                                <i class="fas fa-user-friends"></i> View Customers
+                            </a>
+                            <a href="/admin/plans" class="list-group-item list-group-item-action">
+                                <i class="fas fa-tasks"></i> Send Plans
+                            </a>
+                            <a href="/admin/online-time" class="list-group-item list-group-item-action">
+                                <i class="fas fa-clock"></i> Online Time Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard -->
+            <div class="col-lg-10">
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card dashboard-card card-revenue">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Total Revenue</h6>
+                                        <h3 class="card-title">₹{{ order_stats.total_revenue|round(2) }}</h3>
+                                        <small>Today: ₹{{ order_stats.today_revenue|round(2) }}</small>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card dashboard-card card-orders">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Total Orders</h6>
+                                        <h3 class="card-title">{{ order_stats.total_orders }}</h3>
+                                        <small>Today: {{ order_stats.today_orders }}</small>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card dashboard-card card-users">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Total Users</h6>
+                                        <h3 class="card-title">{{ user_stats.total_customers + user_stats.total_team_members + user_stats.total_admins }}</h3>
+                                        <small>Customers: {{ user_stats.total_customers }}</small>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <div class="card dashboard-card card-pending">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Pending Orders</h6>
+                                        <h3 class="card-title">{{ order_stats.pending_orders }}</h3>
+                                        <small>Need attention</small>
+                                    </div>
+                                    <div class="stat-icon">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders & Active Sessions -->
+                <div class="row">
+                    <!-- Recent Orders -->
+                    <div class="col-lg-8 mb-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Recent Orders</h6>
+                                <a href="/admin/orders" class="btn btn-sm btn-light">View All</a>
+                            </div>
+                            <div class="card-body">
+                                {% if recent_orders %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Order ID</th>
+                                                <th>Customer</th>
+                                                <th>Service</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for order in recent_orders %}
+                                            <tr class="recent-order">
+                                                <td>#{{ order.id }}</td>
+                                                <td>{{ order.customer.name }}</td>
+                                                <td>{{ order.service.name }}</td>
+                                                <td>₹{{ order.total_amount }}</td>
+                                                <td>
+                                                    <span class="badge bg-{% if order.status == 'pending' %}warning{% elif order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% else %}info{% endif %}">
+                                                        {{ order.status }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> No recent orders found.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Sessions -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">Active Sessions</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if active_sessions %}
+                                <div class="list-group">
+                                    {% for session in active_sessions %}
+                                    <div class="list-group-item active-session">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ session.user.name }}</h6>
+                                            <small>{{ session.login_time.strftime('%H:%M') }}</small>
+                                        </div>
+                                        <p class="mb-1">
+                                            <small class="text-muted">
+                                                Role: {{ session.user.role }}<br>
+                                                Login: {{ session.login_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                                            </small>
+                                        </p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> No active sessions.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0">Quick Actions</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 col-6 mb-3">
+                                        <a href="/admin/services" class="btn btn-primary w-100">
+                                            <i class="fas fa-plus"></i> Add Service
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3">
+                                        <a href="/admin/team-members" class="btn btn-success w-100">
+                                            <i class="fas fa-user-plus"></i> Add Team Member
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3">
+                                        <a href="/admin/orders" class="btn btn-warning w-100">
+                                            <i class="fas fa-tasks"></i> Assign Orders
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 col-6 mb-3">
+                                        <a href="/admin/plans" class="btn btn-info w-100">
+                                            <i class="fas fa-paper-plane"></i> Send Plans
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-4 py-3">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Bite Me Buddy Admin</h5>
+                    <p>Administration Panel</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2024 Bite Me Buddy. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+</body>
+</html>
